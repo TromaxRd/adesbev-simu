@@ -1,0 +1,86 @@
+# =============================================================================
+# Escenario BASE — parámetros de la simulación downstream AndesBev
+# Todo lo que se quiera cambiar entre corridas se cambia aquí, no en el código.
+# Las secciones se irán completando en cada paso del proyecto.
+# =============================================================================
+
+corrida:
+  nombre: base
+  semilla: 42
+  replicas: 30
+  horizonte_dias: 365
+
+datos:
+  # Ruta relativa a la carpeta del repositorio. Con el repo en
+  # C:\AndesBev\andesbev-sim apunta al Parquet que genera consolidar_ventas.py v4.
+  # Se puede sobrescribir con la variable de entorno ANDESBEV_PARQUET.
+  parquet: ../datos_procesados/ventas_consolidado.parquet
+  carpeta_intermedios: data/interim
+  carpeta_salidas: outputs          # tablas, corridas y dashboards
+  # Unidad física de la simulación. Se usan pallets equivalentes porque la
+  # base mezcla cajas (CJ), unidades (CU) y otras (CL); el pallet las vuelve
+  # comparables y es la unidad en que se mide la capacidad de un camión.
+  unidad_fisica: pallets
+
+logging:
+  carpeta: logs
+  nivel_consola: INFO
+  nivel_archivo: INFO
+
+segmentacion:
+  cortes_abc: [0.80, 0.95]          # A hasta 80 % del volumen, B hasta 95 %, C el resto
+  cortes_xyz_cv: [0.5, 1.0]         # CV semanal: X < 0.5 <= Y < 1.0 <= Z
+  # Un segmento comercial es ANCLA (ruta dedicada) si en la mediana recibe más
+  # de este volumen por visita; el resto es CAPILAR (multiparada).
+  umbral_ancla_pallets_visita: 0.6
+
+territorio:
+  centro_distribucion:              # punto de Weber del análisis geoespacial del equipo
+    lat: -29.93973
+    lon: -71.26149
+    recalcular_weber: true          # lo recalcula con estos datos y reporta la diferencia
+  radio_nucleo_km: 15               # corte núcleo conurbado / periferia
+  sectores_nucleo: 8
+  sectores_periferia: 5
+  ponderar_nucleo_por: visitas      # lo que consume tiempo de reparto
+
+pronostico:
+  inicio_horizonte: 2026-01-01      # se simula 2026 (corrida.horizonte_dias desde aquí)
+  anio_base: 2025                   # nivel de partida = promedio diario de 2025
+  crecimiento_anual: 0.0            # 2023-2025 fue plano (-0,7 % y +2,3 %)
+  anio_backtest: 2025               # validación: ajusta con 2023-2024 y predice 2025
+  replicas_backtest: 300
+  # Días sin despacho en 2026 (feriados nacionales que caen de lunes a sábado).
+  # Revisar antes de la entrega: en 2023-2025 tampoco hubo despacho algunos
+  # cierres de mes (31 ene, 28 feb), que no están incluidos aquí.
+  feriados:
+    - 2026-01-01   # Año Nuevo
+    - 2026-04-03   # Viernes Santo
+    - 2026-05-01   # Día del Trabajo
+    - 2026-05-21   # Glorias Navales
+    - 2026-06-29   # San Pedro y San Pablo
+    - 2026-07-16   # Virgen del Carmen
+    - 2026-08-15   # Asunción de la Virgen
+    - 2026-09-18   # Independencia
+    - 2026-09-19   # Glorias del Ejército
+    - 2026-10-12   # Encuentro de Dos Mundos
+    - 2026-10-31   # Iglesias Evangélicas
+    - 2026-12-08   # Inmaculada Concepción
+    - 2026-12-25   # Navidad
+
+flota:
+  percentil_capacidad: 0.95         # capacidad = lo que un camión logró el 95 % de los días
+  umbral_ruta_dedicada: 0.8         # camión-día con >= 80 % de pallets a ancla = ruta dedicada
+  umbral_ruta_periferia: 0.5        # camión-día capilar con >= 50 % en periferia
+  percentil_dimensionamiento: 0.90  # la flota cubre el día p90 de la demanda esperada 2026
+  camiones:                         # vacío = usar lo sugerido por el paso 4
+    DEDICADA:
+    CAPILAR_NUCLEO:
+    CAPILAR_PERIFERIA:
+  factor_capacidad: 1.0             # sensibilidad: 0.9 = camiones rinden 10 % menos
+
+simulacion:
+  dias_backlog_max: 2               # atraso tolerado antes de contar venta perdida
+  tolerancia_recuperacion_pallets: 5
+
+disrupciones: []

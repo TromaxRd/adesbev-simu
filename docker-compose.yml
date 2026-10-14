@@ -1,0 +1,29 @@
+# -----------------------------------------------------------------------------
+# Uso (desde C:\AndesBev\andesbev-sim):
+#   docker compose run --rm pipeline     # corre todas las etapas por consola
+#   docker compose up app                # panel web en http://localhost:8000
+# El Parquet real se monta desde ..\datos_procesados (no entra a la imagen).
+# Los resultados quedan en data/, logs/ y outputs/ de esta carpeta.
+# -----------------------------------------------------------------------------
+x-comun: &comun
+  build: .
+  image: andesbev-sim:latest
+  environment:
+    ANDESBEV_PARQUET: /datos/ventas_consolidado.parquet
+  volumes:
+    - ../datos_procesados:/datos:ro
+    - ./config:/app/config:ro
+    - ./data:/app/data
+    - ./logs:/app/logs
+    - ./outputs:/app/outputs
+
+services:
+  app:
+    <<: *comun
+    ports:
+      - "8000:8000"
+
+  pipeline:
+    <<: *comun
+    profiles: ["pipeline"]
+    command: ["python", "main.py", "--etapa", "todo"]

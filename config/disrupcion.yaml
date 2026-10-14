@@ -1,0 +1,38 @@
+# =============================================================================
+# Escenario con DISRUPCIONES — hereda todo de base.yaml y solo declara cambios.
+# La demanda simulada es la misma del escenario base (misma semilla), así la
+# diferencia entre ambos mide solo el efecto de las fallas.
+# =============================================================================
+
+hereda: base.yaml
+
+corrida:
+  nombre: disrupcion
+
+disrupciones:
+  # Corte de rutas hacia la periferia (Ruta 41, Ruta 43) en plena temporada alta
+  - nombre: bloqueo_periferia_verano
+    tipo: bloqueo_vial
+    modo: determinista
+    fecha_inicio: 2026-02-04
+    duracion_dias: 3
+    zonas: [PERIFERIA]
+    capacidad_restante: 0.3
+
+  # Demanda anómala previa a Fiestas Patrias (sobre un mes que ya es peak)
+  - nombre: peak_fiestas_patrias
+    tipo: peak_anomalo
+    modo: determinista
+    fecha_inicio: 2026-09-14
+    duracion_dias: 4
+    multiplicador_demanda: 1.6
+
+  # Quiebres de stock aleatorios en productos clase A: 1 % de probabilidad diaria,
+  # duran 2 a 5 días y dejan sin despachar el 25 % de la demanda de esa clase
+  - nombre: quiebre_stock_clase_A
+    tipo: quiebre_stock
+    modo: estocastico
+    probabilidad_diaria: 0.01
+    duracion_dias: [2, 5]
+    clases_abc: [A]
+    fraccion_afectada: 0.25

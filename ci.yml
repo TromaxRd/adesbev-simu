@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    name: Estilo y pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias (exactas, desde uv.lock)
+        run: uv sync --frozen --extra dev
+      - name: PEP 8 (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: Pruebas unitarias y de integración
+        run: uv run pytest --cov=andesbev_sim --cov-report=term --cov-report=xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: coverage.xml
+
+  seguridad-estatica:
+    name: Seguridad estática (SAST)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen --extra dev
+      - name: Bandit (código)
+        run: uv run bandit -r src main.py -ll
+      - name: pip-audit (vulnerabilidades conocidas en dependencias)
+        run: uv run pip-audit --skip-editable
+
+  simulacion:
+    name: Simulación y dashboard
+    needs: calidad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - name: Pipeline completo sobre la muestra sintética
+        run: >
+          uv run python main.py --etapa todo
+          --escenario config/ci_base.yaml --disrupcion config/ci_disrupcion.yaml
+      - name: Publicar dashboard XHTML y logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-y-logs
+          path: |
+            outputs/ci/corridas/**/dashboard_*.xhtml
+            outputs/ci/corridas/**/*.csv
+            outputs/ci/corridas/**/*.json
+            logs/**
+          if-no-files-found: error
+
+  seguridad-dinamica:
+    name: Docker y seguridad dinámica (DAST)
+    needs: calidad
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir imagen
+        run: docker build -t andesbev-sim:ci .
+      - name: Levantar el panel web
+        run: |
+          docker run -d --name app -p 8000:8000 andesbev-sim:ci
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/api/escenarios && break; sleep 1; done
+      - name: Escaneo OWASP ZAP (baseline)
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: http://localhost:8000
+          rules_file_name: .zap/reglas.tsv
+          allow_issue_writing: false
+          artifact_name: reporte-zap
+          cmd_options: "-I"
+      - name: Logs del contenedor
+        if: always()
+        run: docker logs app

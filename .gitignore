@@ -1,0 +1,24 @@
+# Entornos y cachés
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+*.egg-info/
+
+# Datos pesados o confidenciales (el Parquet real NO va a GitHub)
+data/interim/*
+!data/interim/.gitkeep
+data/interim_ci/
+*.parquet
+!data/sample/*.parquet
+
+# Resultados de corridas
+logs/*
+!logs/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Editor
+.vscode/

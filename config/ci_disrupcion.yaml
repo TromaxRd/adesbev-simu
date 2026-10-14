@@ -1,0 +1,8 @@
+# Escenario de disrupción para CI (misma muestra sintética y réplicas que ci_base.yaml)
+hereda: disrupcion.yaml
+corrida:
+  replicas: 5
+datos:
+  parquet: data/sample/ventas_muestra.parquet
+  carpeta_intermedios: data/interim_ci     # separado de los datos reales
+  carpeta_salidas: outputs/ci

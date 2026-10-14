@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="es" xml:lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Panel de simulación AndesBev</title>
+<style>
+/*<![CDATA[*/
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --accent: #2a78d6; --accent-ink: #ffffff; --bar: #2a78d6;
+  --warn-bg: rgba(250,178,25,0.18); --err-bg: rgba(208,59,59,0.16); --good: #006300;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --accent: #3987e5; --bar: #3987e5; --good: #0ca30c;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 28px 24px 48px; }
+h1 { font-size: 24px; margin: 0 0 4px; font-weight: 650; letter-spacing: -0.01em; }
+.sub { color: var(--ink-2); margin: 0 0 20px; }
+.layout { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+fieldset { border: 0; padding: 0; margin: 0 0 14px; }
+legend { font-size: 12.5px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+label { display: block; font-size: 13.5px; color: var(--ink-2); margin: 8px 0 4px; }
+.fila { display: flex; align-items: center; gap: 10px; }
+.fila input[type=range] { flex: 1; accent-color: var(--accent); }
+.fila output { min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-size: 13.5px; }
+select, input[type=number] { width: 100%; padding: 7px 9px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--page); color: var(--ink); font: inherit; }
+.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.botones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+button { font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink); cursor: pointer; }
+button.primario { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.progreso { height: 10px; background: var(--grid); border-radius: 999px; overflow: hidden; margin: 6px 0 6px; }
+.progreso div { height: 100%; width: 0; background: var(--bar); border-radius: 999px; transition: width 0.25s; }
+.estado { font-size: 13.5px; color: var(--ink-2); min-height: 20px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.tile { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.tile .k { font-size: 12px; color: var(--ink-2); }
+.tile .v { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+.logs { margin-top: 12px; height: 340px; overflow: auto; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--page); font: 12.5px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace; padding: 8px 10px; }
+.logs p { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.logs .WARNING { background: var(--warn-bg); }
+.logs .ERROR { background: var(--err-bg); }
+.oculto { display: none; }
+a { color: var(--accent); }
+.nota { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .tiles { grid-template-columns: 1fr 1fr; } }
+/*]]>*/
+</style>
+</head>
+<body>
+<main>
+  <h1>Panel de simulación · AndesBev</h1>
+  <p class="sub">Escenario base vs disrupción para el piloto Coquimbo–La Serena. Ajusta los parámetros y ejecuta; el progreso y los registros se actualizan en vivo.</p>
+  <div class="layout">
+    <form class="card" id="form" action="#">
+      <h2>Parámetros</h2>
+      <fieldset>
+        <legend>Escenarios</legend>
+        <div class="dos">
+          <div><label for="escenario_base">Base</label><select id="escenario_base"></select></div>
+          <div><label for="escenario_disrupcion">Disrupción</label><select id="escenario_disrupcion"></select></div>
+        </div>
+        <div class="dos">
+          <div><label for="replicas">Réplicas</label><input type="number" id="replicas" min="1" max="200" value="30"/></div>
+          <div><label for="semilla">Semilla</label><input type="number" id="semilla" min="0" value="42"/></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Flota (camiones)</legend>
+        <label for="camiones_dedicada">Dedicada (ancla)</label>
+        <div class="fila"><input type="range" id="camiones_dedicada" min="0" max="20" step="1"/><output id="o_camiones_dedicada"></output></div>
+        <label for="camiones_capilar_nucleo">Capilar núcleo</label>
+        <div class="fila"><input type="range" id="camiones_capilar_nucleo" min="0" max="30" step="1"/><output id="o_camiones_capilar_nucleo"></output></div>
+        <label for="camiones_capilar_periferia">Capilar periferia</label>
+        <div class="fila"><input type="range" id="camiones_capilar_periferia" min="0" max="12" step="1"/><output id="o_camiones_capilar_periferia"></output></div>
+        <label for="factor_capacidad">Rendimiento por camión</label>
+        <div class="fila"><input type="range" id="factor_capacidad" min="0.5" max="1.5" step="0.05" value="1"/><output id="o_factor_capacidad"></output></div>
+      </fieldset>
+      <fieldset>
+        <legend>Intensidad de disrupciones</legend>
+        <label for="capacidad_restante_bloqueo">Capacidad que queda en un bloqueo vial</label>
+        <div class="fila"><input type="range" id="capacidad_restante_bloqueo" min="0" max="1" step="0.05" value="0.3"/><output id="o_capacidad_restante_bloqueo"></output></div>
+        <label for="multiplicador_peak">Multiplicador del peak anómalo</label>
+        <div class="fila"><input type="range" id="multiplicador_peak" min="1" max="3" step="0.1" value="1.6"/><output id="o_multiplicador_peak"></output></div>
+      </fieldset>
+      <div class="botones">
+        <button type="submit" class="primario" id="b_ejecutar">Ejecutar simulación</button>
+        <button type="button" id="b_logs">Ver logs</button>
+        <button type="button" id="b_dashboard" disabled="disabled">Generar dashboard</button>
+      </div>
+      <p class="nota" id="aviso"></p>
+    </form>
+
+    <div class="card">
+      <h2>Ejecución</h2>
+      <div class="progreso" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="barra_cont"><div id="barra"></div></div>
+      <div class="estado" id="estado">Sin corridas todavía.</div>
+      <div class="tiles oculto" id="tiles">
+        <div class="tile"><div class="k">Servicio base</div><div class="v" id="t_base"></div></div>
+        <div class="tile"><div class="k">Servicio disrupción</div><div class="v" id="t_dis"></div></div>
+        <div class="tile"><div class="k">Pérdida (pp)</div><div class="v" id="t_pp"></div></div>
+        <div class="tile"><div class="k">Venta perdida extra</div><div class="v" id="t_vp"></div></div>
+      </div>
+      <p class="nota" id="enlace"></p>
+      <div class="logs" id="logs" aria-live="polite"></div>
+    </div>
+  </div>
+</main>
+<script>
+//<![CDATA[
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const sliders = ['camiones_dedicada', 'camiones_capilar_nucleo', 'camiones_capilar_periferia',
+                   'factor_capacidad', 'capacidad_restante_bloqueo', 'multiplicador_peak'];
+  const fmt = {
+    factor_capacidad: (v) => Math.round(v * 100) + ' %',
+    capacidad_restante_bloqueo: (v) => Math.round(v * 100) + ' %',
+    multiplicador_peak: (v) => '×' + Number(v).toFixed(1)
+  };
+  sliders.forEach((id) => {
+    const pinta = () => { $('o_' + id).textContent = (fmt[id] || String)($(id).value); };
+    $(id).addEventListener('input', pinta); pinta();
+  });
+
+  let job = null, nLogs = 0, ws = null, sondeo = null;
+  const pct = (x) => (100 * x).toFixed(1).replace('.', ',') + ' %';
+
+  function agregarLog(r) {
+    const p = document.createElement('p');
+    p.className = r.nivel;
+    p.textContent = [r.hora, r.nivel.padEnd(7), r.escenario ? '[' + r.escenario + ']' : '', r.mensaje].join(' ');
+    $('logs').appendChild(p);
+    $('logs').scrollTop = $('logs').scrollHeight;
+  }
+
+  function pintarEstado(e) {
+    $('barra').style.width = Math.round(100 * e.progreso) + '%';
+    $('barra_cont').setAttribute('aria-valuenow', String(Math.round(100 * e.progreso)));
+    const textos = { en_cola: 'En cola…', corriendo: 'Simulando: ' + e.mensaje, listo: 'Listo.', error: 'Error: ' + (e.error || '') };
+    $('estado').textContent = textos[e.estado] || e.estado;
+    if (e.estado === 'listo' && e.resumen) {
+      $('tiles').classList.remove('oculto');
+      $('t_base').textContent = pct(e.resumen.servicio_base);
+      $('t_dis').textContent = pct(e.resumen.servicio_disrupcion);
+      $('t_pp').textContent = e.resumen.perdida_pp.toFixed(2).replace('.', ',');
+      $('t_vp').textContent = Math.round(e.resumen.venta_perdida_extra) + ' pal';
+      $('b_dashboard').disabled = false;
+      mostrarEnlace(e.dashboard);
+    }
+    if (e.estado === 'listo' || e.estado === 'error') { $('b_ejecutar').disabled = false; detener(); }
+  }
+
+  function mostrarEnlace(url) {
+    const n = $('enlace');
+    while (n.firstChild) n.removeChild(n.firstChild);
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Abrir dashboard XHTML';
+    n.appendChild(a);
+  }
+
+  function detener() {
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    if (sondeo) { clearInterval(sondeo); sondeo = null; }
+  }
+
+  // Respaldo con Fetch API si el WebSocket no está disponible
+  function sondear() {
+    sondeo = setInterval(async () => {
+      const [e, l] = await Promise.all([
+        fetch('/api/estado/' + job).then((r) => r.json()),
+        fetch('/api/logs/' + job + '?desde=' + nLogs).then((r) => r.json())
+      ]);
+      l.logs.forEach(agregarLog); nLogs = l.total; pintarEstado(e);
+    }, 800);
+  }
+
+  function escuchar() {
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    try { ws = new WebSocket(proto + location.host + '/ws/progreso/' + job); }
+    catch (e) { sondear(); return; }
+    ws.onmessage = (m) => {
+      const d = JSON.parse(m.data);
+      d.logs.forEach(agregarLog); nLogs += d.logs.length; pintarEstado(d.estado);
+    };
+    ws.onerror = () => { ws = null; if (!sondeo) sondear(); };
+  }
+
+  $('form').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    $('b_ejecutar').disabled = true; $('b_dashboard').disabled = true;
+    $('tiles').classList.add('oculto');
+    while ($('logs').firstChild) $('logs').removeChild($('logs').firstChild);
+    nLogs = 0;
+    const cuerpo = {
+      escenario_base: $('escenario_base').value, escenario_disrupcion: $('escenario_disrupcion').value,
+      replicas: Number($('replicas').value), semilla: Number($('semilla').value)
+    };
+    sliders.forEach((id) => { cuerpo[id] = Number($(id).value); });
+    const r = await fetch('/api/ejecutar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+    const d = await r.json();
+    if (!r.ok) { $('estado').textContent = 'No se pudo iniciar: ' + JSON.stringify(d.detail); $('b_ejecutar').disabled = false; return; }
+    job = d.id; pintarEstado(d); escuchar();
+  });
+
+  $('b_logs').addEventListener('click', async () => {
+    if (!job) { $('estado').textContent = 'Todavía no hay una corrida en esta sesión.'; return; }
+    const l = await fetch('/api/logs/' + job + '?desde=0').then((r) => r.json());
+    while ($('logs').firstChild) $('logs').removeChild($('logs').firstChild);
+    l.logs.forEach(agregarLog); nLogs = l.total;
+  });
+
+  $('b_dashboard').addEventListener('click', async () => {
+    const d = await fetch('/api/dashboard/' + job, { method: 'POST' }).then((r) => r.json());
+    mostrarEnlace(d.dashboard);
+    window.open(d.dashboard, '_blank', 'noopener');
+  });
+
+  fetch('/api/escenarios').then((r) => r.json()).then((d) => {
+    ['escenario_base', 'escenario_disrupcion'].forEach((id, i) => {
+      d.escenarios.forEach((n) => {
+        const o = document.createElement('option'); o.value = n; o.textContent = n;
+        if (n === (i === 0 ? 'base.yaml' : 'disrupcion.yaml')) o.selected = true;
+        $(id).appendChild(o);
+      });
+    });
+    $('replicas').value = d.replicas; $('semilla').value = d.semilla;
+    const s = d.camiones_sugeridos;
+    const ini = { camiones_dedicada: s.DEDICADA, camiones_capilar_nucleo: s.CAPILAR_NUCLEO, camiones_capilar_periferia: s.CAPILAR_PERIFERIA };
+    Object.keys(ini).forEach((id) => { if (ini[id] !== undefined) { $(id).value = ini[id]; $(id).dispatchEvent(new Event('input')); } });
+    if (!d.listo_para_simular) {
+      $('aviso').textContent = 'Faltan las etapas de preparación. Corre antes: python main.py --etapa todo';
+      $('b_ejecutar').disabled = true;
+    } else {
+      $('aviso').textContent = 'Flota inicial = sugerida por el paso 4 (' + (s.DEDICADA + s.CAPILAR_NUCLEO + s.CAPILAR_PERIFERIA) + ' camiones).';
+    }
+  });
+})();
+//]]>
+</script>
+</body>
+</html>

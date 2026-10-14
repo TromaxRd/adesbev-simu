@@ -1,0 +1,11 @@
+.venv/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.git/
+.github/
+data/
+logs/
+outputs/
+tests/
+*.parquet

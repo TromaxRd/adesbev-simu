@@ -1,0 +1,8 @@
+# Escenario base para CI: usa la muestra SINTÉTICA (el Parquet real no está en GitHub)
+hereda: base.yaml
+corrida:
+  replicas: 5
+datos:
+  parquet: data/sample/ventas_muestra.parquet
+  carpeta_intermedios: data/interim_ci     # separado de los datos reales
+  carpeta_salidas: outputs/ci
